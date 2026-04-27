@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Xerox Shop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #080b10;
+      --surface: #0f1319;
+      --surface-2: #141a24;
+      --surface-3: #1a2232;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.12);
+      --text: #eef0f8;
+      --text-2: #8892a8;
+      --text-3: #4a5468;
+      --accent: #3d7eff;
+      --accent-dim: rgba(61,126,255,0.13);
+      --accent-glow: rgba(61,126,255,0.3);
+      --green: #20c45a;
+      --green-dim: rgba(32,196,90,0.12);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245,158,11,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.10);
+      --orange: #f97316;
+      --orange-dim: rgba(249,115,22,0.12);
+      --purple: #a855f7;
+      --purple-dim: rgba(168,85,247,0.12);
+      --cyan: #06b6d4;
+      --cyan-dim: rgba(6,182,212,0.12);
+      --r: 16px;
+      --r-sm: 10px;
+      --r-xs: 7px;
+      --font: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --nav-h: 68px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; height: 100%; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+      background-image:
+        radial-gradient(ellipse 70% 40% at 15% 0%, rgba(61,126,255,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 30% at 85% 100%, rgba(32,196,90,0.04) 0%, transparent 55%);
+    }
+
+    /* ── LOADING ── */
+    #loadingOverlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+      transition: opacity 0.4s ease;
+    }
+    #loadingOverlay.hidden { opacity: 0; pointer-events: none; }
+    .loader-ring {
+      width: 44px; height: 44px;
+      border: 3px solid var(--surface-3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loader-text { font-size: 0.82rem; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── APP SHELL ── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100svh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,11,16,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+
+    .app-header-title {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .app-header-title .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .sync-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.72rem; font-weight: 600; color: var(--text-2);
+    }
+    .sync-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      transition: background 0.3s;
+    }
+    .sync-dot.syncing { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse 1s infinite; }
+    .sync-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+    /* ── CONTENT ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+      overscroll-behavior-y: contain;
+    }
+
+    /* ── SCREENS ── */
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; animation: slideUp 0.22s ease; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: rgba(9,12,18,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: flex-start;
+      z-index: 100;
+    }
+
+    .nav-items {
+      display: flex; width: 100%; align-items: center;
+      height: var(--nav-h);
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; padding: 8px 4px;
+      cursor: pointer; border: none; background: transparent;
+      font-family: var(--font); transition: all 0.18s ease;
+      position: relative;
+    }
+
+    .nav-item-icon {
+      font-size: 1.3rem; line-height: 1;
+      transition: transform 0.18s ease;
+    }
+    .nav-item-label {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--text-3);
+      transition: color 0.18s ease;
+    }
+    .nav-item.active .nav-item-label { color: var(--accent); }
+    .nav-item.active .nav-item-icon { transform: scale(1.1); }
+    .nav-item::after {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px; border-radius: 0 0 4px 4px;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+    .nav-item.active::after { width: 24px; }
+
+    /* ── PAGE TITLE ── */
+    .page-header {
+      margin-bottom: 18px;
+    }
+    .page-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--accent);
+      display: flex; align-items: center; gap: 5px; margin-bottom: 4px;
+    }
+    .page-eyebrow::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 7px var(--accent);
+    }
+    .page-title {
+      font-size: 1.7rem; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.88rem; font-weight: 700; margin-bottom: 14px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── HOME GRID ── */
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .home-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px 14px 14px;
+      cursor: pointer; border: none;
+      font-family: var(--font);
+      text-align: left; color: var(--text);
+      transition: all 0.2s ease;
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .home-tile::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--tile-glow, transparent);
+      opacity: 0; transition: opacity 0.2s ease;
+    }
+    .home-tile:active { transform: scale(0.97); }
+    .home-tile:active::before { opacity: 1; }
+
+    .home-tile[data-screen="machines"] { --tile-glow: linear-gradient(135deg,rgba(61,126,255,0.1) 0%,transparent 60%); border-color: rgba(61,126,255,0.12); }
+    .home-tile[data-screen="toner"]    { --tile-glow: linear-gradient(135deg,rgba(245,158,11,0.1) 0%,transparent 60%); border-color: rgba(245,158,11,0.12); }
+    .home-tile[data-screen="sales"]    { --tile-glow: linear-gradient(135deg,rgba(249,115,22,0.1) 0%,transparent 60%); border-color: rgba(249,115,22,0.12); }
+    .home-tile[data-screen="shipping"] { --tile-glow: linear-gradient(135deg,rgba(32,196,90,0.1) 0%,transparent 60%); border-color: rgba(32,196,90,0.12); }
+    .home-tile[data-screen="ledger"]   { --tile-glow: linear-gradient(135deg,rgba(168,85,247,0.1) 0%,transparent 60%); border-color: rgba(168,85,247,0.12); }
+    .home-tile[data-screen="records"]  { --tile-glow: linear-gradient(135deg,rgba(6,182,212,0.1) 0%,transparent 60%); border-color: rgba(6,182,212,0.12); }
+
+    .tile-icon { font-size: 1.6rem; line-height: 1; }
+    .tile-name { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; }
+    .tile-desc { font-size: 0.72rem; color: var(--text-2); line-height: 1.3; }
+
+    /* ── STATS STRIP ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .stat-label { font-size: 0.66rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; font-family: var(--mono); letter-spacing: -0.03em; }
+
+    /* ── FORMS ── */
+    .form-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .form-title {
+      font-size: 0.88rem; font-weight: 700; margin-bottom: 14px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group:last-of-type { margin-bottom: 0; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    label {
+      display: block;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em;
+      color: var(--text-2); text-transform: uppercase; margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xs);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 1rem;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      appearance: none; -webkit-appearance: none;
+      -webkit-text-size-adjust: 100%;
+    }
+    input::placeholder { color: var(--text-3); }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+      cursor: pointer;
+    }
+    select option { background: var(--surface-2); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 20px;
+      border: none; border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 0.92rem; font-weight: 700;
+      cursor: pointer; transition: all 0.18s ease;
+      white-space: nowrap; letter-spacing: -0.01em;
+      width: 100%; margin-top: 14px;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 18px var(--accent-glow); }
+    .btn-primary:active { background: #5590ff; }
+    .btn-green   { background: var(--green); color: #fff; box-shadow: 0 4px 14px rgba(32,196,90,0.3); }
+    .btn-orange  { background: var(--orange); color: #fff; box-shadow: 0 4px 14px rgba(249,115,22,0.25); }
+    .btn-danger  { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+    .btn-ghost   { background: var(--surface-3); color: var(--text-2); border: 1px solid var(--border); }
+    .btn-sm { padding: 8px 14px; font-size: 0.8rem; width: auto; margin-top: 0; border-radius: var(--r-xs); }
+
+    /* ── ITEM CARDS ── */
+    .item-list { display: flex; flex-direction: column; gap: 8px; }
+    .item-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 14px;
+    }
+    .item-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .item-card-title { font-size: 0.95rem; font-weight: 700; }
+    .item-card-meta {
+      display: flex; flex-direction: column; gap: 3px;
+      font-size: 0.78rem; color: var(--text-2); margin-bottom: 10px;
+    }
+    .item-card-actions { display: flex; gap: 8px; }
+
+    /* ── TABLE REPLACEMENT (mobile-friendly list rows) ── */
+    .data-list { display: flex; flex-direction: column; gap: 8px; }
+    .data-row {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+    }
+    .data-row-main { flex: 1; min-width: 0; }
+    .data-row-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .data-row-sub { font-size: 0.74rem; color: var(--text-2); margin-top: 2px; }
+    .data-row-right { text-align: right; flex-shrink: 0; }
+    .data-row-value { font-family: var(--mono); font-size: 0.9rem; font-weight: 600; }
+    .data-row-label { font-size: 0.68rem; color: var(--text-3); margin-top: 1px; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 99px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .badge::before { content: ''; width: 4px; height: 4px; border-radius: 50%; }
+    .badge-green  { background: var(--green-dim);  color: var(--green);  } .badge-green::before  { background: var(--green); }
+    .badge-amber  { background: var(--amber-dim);  color: var(--amber);  } .badge-amber::before  { background: var(--amber); }
+    .badge-red    { background: var(--red-dim);    color: var(--red);    } .badge-red::before    { background: var(--red); }
+    .badge-blue   { background: var(--accent-dim); color: var(--accent); } .badge-blue::before   { background: var(--accent); }
+    .badge-orange { background: var(--orange-dim); color: var(--orange); } .badge-orange::before { background: var(--orange); }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 4px; background: var(--surface-3); border-radius: 99px; overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%; background: var(--green); border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── MESSAGES ── */
+    .msg {
+      display: none; padding: 12px 14px; border-radius: var(--r-sm);
+      font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
+      align-items: center; gap: 8px;
+    }
+    .msg.success { display: flex; background: var(--green-dim); color: var(--green); border: 1px solid rgba(32,196,90,0.2); }
+    .msg.error   { display: flex; background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px); left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px); max-width: 420px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      z-index: 9000; pointer-events: none;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      font-size: 0.85rem; font-weight: 600;
+      width: 100%; pointer-events: auto;
+      animation: toastIn 0.25s ease;
+    }
+    .toast.success { border-color: rgba(32,196,90,0.3); }
+    .toast.error   { border-color: rgba(239,68,68,0.3); }
+    .toast-icon { font-size: 1rem; }
+    .toast.success .toast-icon { color: var(--green); }
+    .toast.error   .toast-icon { color: var(--red); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty { text-align: center; padding: 28px 16px; color: var(--text-3); }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+    .empty-text { font-size: 0.82rem; }
+
+    /* ── SECTION DIVIDER ── */
+    .section-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-3);
+      margin: 18px 0 10px;
+    }
+
+    /* ── SUMMARY TOTAL ── */
+    .totals-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(61,126,255,0.2);
+      border-radius: var(--r-sm);
+      margin-top: 10px;
+    }
+    .totals-label { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+    .totals-value { font-family: var(--mono); font-size: 1rem; font-weight: 700; color: var(--accent); }
+
+    /* ── SWIPE-DELETE HINT ── */
+    .hint { font-size: 0.7rem; color: var(--text-3); text-align: center; padding: 4px 0; }
+
+    /* ── SHIMMER for loading ── */
+    @media (prefers-reduced-motion: no-preference) {
+      .skeleton {
+        background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+      }
+    }
+    @keyframes shimmer { to { background-position: -200% center; } }
+
+    /* ── HOME HEADER LARGE ── */
+    .home-hero {
+      padding: 20px 0 14px;
+      margin-bottom: 4px;
+    }
+    .home-hero-title {
+      font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em;
+      line-height: 1.1; margin-bottom: 4px;
+    }
+    .home-hero-sub { font-size: 0.85rem; color: var(--text-2); }
+    .home-hero-sub span { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loadingOverlay">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Connecting…</div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-header-title">
+      <div class="dot"></div>
+      Yamunaji sales and services
+    </div>
+    <div class="sync-pill">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Live</span>
+    </div>
+  </header>
+
+  <!-- Content Area -->
+  <div class="content" id="contentArea">
+
+    <!-- ══ HOME ══ -->
+    <div id="homeScreen" class="screen active">
+      <div class="home-hero">
+        <div class="home-hero-title">Stock<br>Manager</div>
+        <div class="home-hero-sub">Xerox Shop · <span>Live Data</span></div>
+      </div>
+      <div class="home-grid">
+        <button class="home-tile" data-screen="machines" type="button">
+          <div class="tile-icon">🖨️</div>
+          <div class="tile-name">Machines</div>
+          <div class="tile-desc">B&W & Color inventory</div>
+        </button>
+        <button class="home-tile" data-screen="toner" type="button">
+          <div class="tile-icon">🖋️</div>
+          <div class="tile-name">Toner</div>
+          <div class="tile-desc">Toner stock levels</div>
+        </button>
+        <button class="home-tile" data-screen="sales" type="button">
+          <div class="tile-icon">💰</div>
+          <div class="tile-name">Sales</div>
+          <div class="tile-desc">Record & view sales</div>
+        </button>
+        <button class="home-tile" data-screen="shipping" type="button">
+          <div class="tile-icon">📦</div>
+          <div class="tile-name">Shipping</div>
+          <div class="tile-desc">Dispatch & tracking</div>
+        </button>
+        <button class="home-tile" data-screen="ledger" type="button">
+          <div class="tile-icon">📋</div>
+          <div class="tile-name">Ledger</div>
+          <div class="tile-desc">Credit & balances</div>
+        </button>
+        <button class="home-tile" data-screen="records" type="button">
+          <div class="tile-icon">🗂️</div>
+          <div class="tile-name">Records</div>
+          <div class="tile-desc">Completed archive</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ MACHINES ══ -->
+    <div id="machinesScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Inventory</div>
+        <div class="page-title">Machines</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="stat-label">B&W</div>
+          <div class="stat-value" id="bwMachineCount">—</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-label">Color</div>
+          <div class="stat-value" id="colorMachineCount">—</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="totalMachineCount">—</div>
+        </div>
+      </div>
+
+      <div id="messageBox" class="msg"></div>
+
+      <div class="form-section">
+        <div class="form-title">➕ Add Machine Stock</div>
+        <form id="purchaseForm">
+          <div class="form-group">
+            <label for="purchaseModel">Machine Model</label>
+            <input id="purchaseModel" type="text" placeholder="e.g. Canon IR 2425" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="purchaseMachineType">Machine Type</label>
+            <select id="purchaseMachineType" required>
+              <option value="Black & White">Black &amp; White</option>
+              <option value="Color">Color</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="purchaseQty">Quantity</label>
+            <input id="purchaseQty" type="number" min="0" placeholder="0" required inputmode="numeric">
+          </div>
+          <button type="submit" class="btn btn-green">Add to Inventory</button>
+        </form>
+      </div>
+
+      <div class="section-label">Black &amp; White</div>
+      <div class="card">
+        <div class="card-title">
+          In Stock <span class="badge badge-blue" id="bwInStockCount">0</span>
+        </div>
+        <div class="data-list" id="bwInventoryList"></div>
+        <div id="bwEmptyState" class="empty" style="display:none;"><div class="empty-icon">🖨️</div><div class="empty-text">No B&W machines in stock</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">
+          Out of Stock <span class="badge badge-red" id="bwOutCount">0</span>
+        </div>
+        <div class="data-list" id="bwOutOfStockList"></div>
+        <div id="bwOutOfStockEmptyState" class="empty" style="display:none;"><div class="empty-icon">✅</div><div class="empty-text">No out-of-stock machines</div></div>
+      </div>
+
+      <div class="section-label">Color</div>
+      <div class="card">
+        <div class="card-title">
+          In Stock <span class="badge badge-blue" id="colorInStockCount">0</span>
+        </div>
+        <div class="data-list" id="colorInventoryList"></div>
+        <div id="colorEmptyState" class="empty" style="display:none;"><div class="empty-icon">🖨️</div><div class="empty-text">No color machines in stock</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">
+          Out of Stock <span class="badge badge-red" id="colorOutCount">0</span>
+        </div>
+        <div class="data-list" id="colorOutOfStockList"></div>
+        <div id="colorOutOfStockEmptyState" class="empty" style="display:none;"><div class="empty-icon">✅</div><div class="empty-text">No out-of-stock color machines</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TONER ══ -->
+    <div id="tonerScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Inventory</div>
+        <div class="page-title">Toner</div>
+      </div>
+
+      <div id="tonerMessageBox" class="msg"></div>
+
+      <div class="form-section">
+        <div class="form-title">➕ Add Toner Stock</div>
+        <form id="tonerPurchaseForm">
+          <div class="form-group">
+            <label for="purchaseTonerNameOnly">Toner Name</label>
+            <input id="purchaseTonerNameOnly" type="text" placeholder="e.g. NPG-59" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="purchaseTonerQtyOnly">Quantity</label>
+            <input id="purchaseTonerQtyOnly" type="number" min="0" placeholder="0" required inputmode="numeric">
+          </div>
+          <button type="submit" class="btn btn-green">Add Toner</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          In Stock <span class="badge badge-blue" id="tonerInStockCount">0</span>
+        </div>
+        <div class="data-list" id="tonerInventoryList"></div>
+        <div id="tonerEmptyState" class="empty" style="display:none;"><div class="empty-icon">🖋️</div><div class="empty-text">No toner in stock</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--amber)">
+          Out of Stock <span class="badge badge-amber" id="tonerOutCount">0</span>
+        </div>
+        <div class="data-list" id="tonerOutOfStockList"></div>
+        <div id="tonerOutOfStockEmptyState" class="empty" style="display:none;"><div class="empty-icon">✅</div><div class="empty-text">All toners in stock</div></div>
+      </div>
+    </div>
+
+    <!-- ══ SALES ══ -->
+    <div id="salesScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Transactions</div>
+        <div class="page-title">Sales</div>
+      </div>
+
+      <div id="salesMessageBox" class="msg"></div>
+
+      <div class="form-section">
+        <div class="form-title">🖨️ Machine Sale</div>
+        <form id="sellForm">
+          <div class="form-group">
+            <label for="sellModel">Machine Model</label>
+            <input id="sellModel" type="text" placeholder="e.g. Canon IR 2425" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="sellMachineType">Machine Type</label>
+            <select id="sellMachineType" required>
+              <option value="Black & White">Black &amp; White</option>
+              <option value="Color">Color</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="customerName">Customer Name</label>
+            <input id="customerName" type="text" placeholder="Customer name" required autocomplete="off">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sellingPrice">Price (₹)</label>
+              <input id="sellingPrice" type="number" min="0" step="0.01" placeholder="1000" required inputmode="decimal">
+            </div>
+            <div class="form-group">
+              <label for="sellQty">Qty</label>
+              <input id="sellQty" type="number" min="1" placeholder="1" required inputmode="numeric">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-orange">Record Machine Sale</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <div class="form-title">🖋️ Toner Sale</div>
+        <form id="tonerSellForm">
+          <div class="form-group">
+            <label for="sellTonerName">Toner Name</label>
+            <input id="sellTonerName" type="text" placeholder="e.g. NPG-59" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="tonerCustomerName">Customer Name</label>
+            <input id="tonerCustomerName" type="text" placeholder="Customer name" required autocomplete="off">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tonerSellingPrice">Price (₹)</label>
+              <input id="tonerSellingPrice" type="number" min="0" step="0.01" placeholder="500" required inputmode="decimal">
+            </div>
+            <div class="form-group">
+              <label for="sellTonerQty">Qty</label>
+              <input id="sellTonerQty" type="number" min="1" placeholder="1" required inputmode="numeric">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-orange">Record Toner Sale</button>
+        </form>
+      </div>
+
+      <div class="section-label">Machine Sales History</div>
+      <div class="card">
+        <div class="data-list" id="machineSalesList"></div>
+        <div id="salesEmptyState" class="empty" style="display:none;"><div class="empty-icon">💰</div><div class="empty-text">No machine sales recorded</div></div>
+      </div>
+
+      <div class="section-label">Toner Sales History</div>
+      <div class="card">
+        <div class="data-list" id="tonerSalesList"></div>
+        <div id="tonerSalesEmptyState" class="empty" style="display:none;"><div class="empty-icon">🖋️</div><div class="empty-text">No toner sales recorded</div></div>
+      </div>
+    </div>
+
+    <!-- ══ SHIPPING ══ -->
+    <div id="shippingScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Dispatch</div>
+        <div class="page-title">Shipping</div>
+      </div>
+
+      <div id="shippingMessageBox" class="msg"></div>
+
+      <div class="form-section">
+        <div class="form-title">📦 New Shipping Task</div>
+        <form id="shippingForm">
+          <div class="form-group">
+            <label for="shippingModel">Machine Model</label>
+            <input id="shippingModel" type="text" placeholder="e.g. Canon IR 2425" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="shippingCustomer">Customer Name</label>
+            <input id="shippingCustomer" type="text" placeholder="Customer name" required autocomplete="off">
+          </div>
+          <button type="submit" class="btn btn-primary">Add Shipping Task</button>
+        </form>
+      </div>
+
+      <div class="section-label">
+        Pending Tasks <span class="badge badge-amber" id="pendingShippingCount">0</span>
+      </div>
+      <div class="item-list" id="shippingTodoList"></div>
+      <div id="shippingEmptyState" class="empty" style="display:none;"><div class="empty-icon">📦</div><div class="empty-text">No pending tasks</div></div>
+
+      <div class="section-label">Shipping Log</div>
+      <div class="card">
+        <div class="data-list" id="shippingInfoList"></div>
+        <div id="shippingInfoEmptyState" class="empty" style="display:none;"><div class="empty-icon">📦</div><div class="empty-text">No shipping records yet</div></div>
+      </div>
+    </div>
+
+    <!-- ══ LEDGER ══ -->
+    <div id="ledgerScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Accounts</div>
+        <div class="page-title">Ledger</div>
+      </div>
+
+      <div id="ledgerMessageBox" class="msg"></div>
+
+      <div class="form-section">
+        <div class="form-title">📋 New Ledger Entry</div>
+        <form id="ledgerForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ledgerCustomerName">Customer</label>
+              <input id="ledgerCustomerName" type="text" placeholder="Name" required autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="ledgerItemName">Item</label>
+              <input id="ledgerItemName" type="text" placeholder="e.g. Canon IR" required autocomplete="off">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ledgerItemPrice">Price (₹)</label>
+              <input id="ledgerItemPrice" type="number" min="0" step="0.01" placeholder="1000" required inputmode="decimal">
+            </div>
+            <div class="form-group">
+              <label for="ledgerAmountPaid">Deposit (₹)</label>
+              <input id="ledgerAmountPaid" type="number" min="0" step="0.01" placeholder="200" required inputmode="decimal">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-green">Create Ledger Entry</button>
+        </form>
+      </div>
+
+      <div class="section-label">
+        Active Entries <span class="badge badge-blue" id="activeLedgerCount">0</span>
+      </div>
+      <div class="item-list" id="ledgerList"></div>
+      <div id="ledgerEmptyState" class="empty" style="display:none;"><div class="empty-icon">📋</div><div class="empty-text">No active ledger entries</div></div>
+    </div>
+
+    <!-- ══ RECORDS ══ -->
+    <div id="recordsScreen" class="screen">
+      <div class="page-header">
+        <div class="page-eyebrow">Archive</div>
+        <div class="page-title">Records</div>
+      </div>
+
+      <div class="section-label">Completed Ledger Records</div>
+      <div class="card">
+        <div class="data-list" id="recordsList"></div>
+        <div id="recordsEmptyState" class="empty" style="display:none;"><div class="empty-icon">🗂️</div><div class="empty-text">No completed records yet</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <div class="nav-items">
+      <button class="nav-item active" data-screen="home" type="button">
+        <div class="nav-item-icon">🏠</div>
+        <div class="nav-item-label">Home</div>
+      </button>
+      <button class="nav-item" data-screen="machines" type="button">
+        <div class="nav-item-icon">🖨️</div>
+        <div class="nav-item-label">Machines</div>
+      </button>
+      <button class="nav-item" data-screen="toner" type="button">
+        <div class="nav-item-icon">🖋️</div>
+        <div class="nav-item-label">Toner</div>
+      </button>
+      <button class="nav-item" data-screen="sales" type="button">
+        <div class="nav-item-icon">💰</div>
+        <div class="nav-item-label">Sales</div>
+      </button>
+      <button class="nav-item" data-screen="shipping" type="button">
+        <div class="nav-item-icon">📦</div>
+        <div class="nav-item-label">Ship</div>
+      </button>
+      <button class="nav-item" data-screen="ledger" type="button">
+        <div class="nav-item-icon">📋</div>
+        <div class="nav-item-label">Ledger</div>
+      </button>
+      <button class="nav-item" data-screen="records" type="button">
+        <div class="nav-item-icon">🗂️</div>
+        <div class="nav-item-label">Records</div>
+      </button>
+    </div>
+  </nav>
+
+</div><!-- /app -->
+
+<script type="module">
+  import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // ── Firebase config — same as desktop app ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyProject-stock-manager-6ee55",
+    authDomain: "stock-manager-6ee55.firebaseapp.com",
+    projectId: "stock-manager-6ee55",
+    storageBucket: "stock-manager-6ee55.appspot.com",
+    messagingSenderId: "106733309702413974500",
+    appId: "1:106733309702413974500:web:stock-manager"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ── In-memory store ──
+  let machines = [], machineSales = [], toners = [], tonerSales = [];
+  let shippingTodos = [], shippingInfo = [], ledgers = [], ledgerRecords = [];
+
+  // ── HELPERS ──
+  const $ = id => document.getElementById(id);
+  const getRecordId  = () => `${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+  const getTodayDate = () => new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const formatMoney  = v  => Number(v||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const normalize    = v  => v.trim().toLowerCase();
+
+  function formatDuration(startTime, endTime) {
+    const diff = Math.max(0, endTime - startTime);
+    const mins = Math.floor(diff / 60000);
+    const days = Math.floor(mins / 1440);
+    const hrs  = Math.floor((mins % 1440) / 60);
+    const m    = mins % 60;
+    const parts = [];
+    if (days) parts.push(`${days}d`);
+    if (hrs)  parts.push(`${hrs}h`);
+    if (m || parts.length === 0) parts.push(`${m}m`);
+    return parts.join(" ");
+  }
+
+  function sortByName(arr, key) {
+    return [...arr].sort((a,b) => String(a[key]).localeCompare(String(b[key]),undefined,{numeric:true,sensitivity:"base"}));
+  }
+  function ensureIds(arr) { return arr.map(i => ({ ...i, id: i.id || getRecordId() })); }
+
+  // ── SYNC STATUS ──
+  function setSyncStatus(state) {
+    const dot  = $("syncDot");
+    const text = $("syncText");
+    dot.className  = `sync-dot ${state==="syncing"?"syncing":state==="offline"?"offline":""}`;
+    text.textContent = state==="syncing"?"Syncing…":state==="offline"?"Offline":"Live";
+  }
+
+  // ── FIRESTORE HELPERS ──
+  async function fbGet(col) {
+    const snap = await getDocs(collection(db, col));
+    return snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+  }
+  async function fbSet(col, id, data) {
+    setSyncStatus("syncing");
+    await setDoc(doc(db, col, id), data);
+    setSyncStatus("live");
+  }
+  async function fbDel(col, id) {
+    setSyncStatus("syncing");
+    await deleteDoc(doc(db, col, id));
+    setSyncStatus("live");
+  }
+
+  // ── TOAST ──
+  function showToast(msg, type = "success") {
+    const tc = $("toast-container");
+    const t = document.createElement("div");
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span class="toast-icon">${type==="success"?"✓":"✕"}</span><span>${msg}</span>`;
+    tc.appendChild(t);
+    setTimeout(() => { t.style.opacity="0"; t.style.transition="0.3s"; setTimeout(()=>t.remove(),300); }, 2800);
+  }
+
+  function showMsg(boxId, text, type) {
+    const box = $(boxId);
+    if (!box) return;
+    box.textContent = text;
+    box.className = `msg ${type}`;
+    setTimeout(() => { box.className = "msg"; box.textContent = ""; }, 4000);
+  }
+
+  // ── NAVIGATION ──
+  const screens = {};
+  document.querySelectorAll(".screen").forEach(s => screens[s.id.replace("Screen","")] = s);
+
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove("active"));
+    const target = screens[name];
+    if (target) { target.classList.add("active"); }
+    $("contentArea").scrollTo({ top: 0, behavior: "smooth" });
+
+    document.querySelectorAll(".nav-item").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.screen === name);
+    });
+  }
+
+  document.querySelectorAll("[data-screen]").forEach(btn =>
+    btn.addEventListener("click", () => showScreen(btn.dataset.screen))
+  );
+
+  // ── RENDER MACHINES ──
+  function renderMachineGroup(type, inListId, outListId, inCountId, outCountId, emptyInId, emptyOutId) {
+    const inList  = $(inListId);
+    const outList = $(outListId);
+    inList.innerHTML  = "";
+    outList.innerHTML = "";
+
+    const typed    = machines.filter(m => m.machineType === type);
+    const inStock  = sortByName(typed.filter(m => m.qty > 0), "model");
+    const outStock = sortByName(typed.filter(m => m.qty <= 0), "model");
+
+    $(emptyInId).style.display  = inStock.length  ? "none" : "block";
+    $(emptyOutId).style.display = outStock.length ? "none" : "block";
+    $(inCountId).textContent  = inStock.length;
+    $(outCountId).textContent = outStock.length;
+
+    inStock.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main">
+          <div class="data-row-title">${item.model}</div>
+          <div class="data-row-sub">${item.machineType}</div>
+        </div>
+        <div class="data-row-right">
+          <div class="data-row-value">${item.qty}</div>
+          <div class="data-row-label"><span class="badge badge-green">In Stock</span></div>
+        </div>`;
+      inList.appendChild(div);
+    });
+
+    outStock.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main">
+          <div class="data-row-title">${item.model}</div>
+          <div class="data-row-sub">${item.machineType}</div>
+        </div>
+        <div class="data-row-right">
+          <div class="data-row-value" style="color:var(--red)">${item.qty}</div>
+          <div class="data-row-label"><span class="badge badge-red">Out</span></div>
+        </div>`;
+      outList.appendChild(div);
+    });
+  }
+
+  function updateMachineCounts() {
+    const bw    = machines.filter(m=>m.machineType==="Black & White").reduce((s,m)=>s+Number(m.qty||0),0);
+    const color = machines.filter(m=>m.machineType==="Color").reduce((s,m)=>s+Number(m.qty||0),0);
+    $("bwMachineCount").textContent    = bw;
+    $("colorMachineCount").textContent = color;
+    $("totalMachineCount").textContent = bw + color;
+  }
+
+  function renderToners() {
+    $("tonerInventoryList").innerHTML  = "";
+    $("tonerOutOfStockList").innerHTML = "";
+    const inStock  = sortByName(toners.filter(t=>t.qty>0),  "tonerName");
+    const outStock = sortByName(toners.filter(t=>t.qty<=0), "tonerName");
+    $("tonerEmptyState").style.display       = inStock.length  ? "none" : "block";
+    $("tonerOutOfStockEmptyState").style.display = outStock.length ? "none" : "block";
+    $("tonerInStockCount").textContent = inStock.length;
+    $("tonerOutCount").textContent     = outStock.length;
+
+    inStock.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main"><div class="data-row-title">${t.tonerName}</div></div>
+        <div class="data-row-right">
+          <div class="data-row-value">${t.qty}</div>
+          <div class="data-row-label"><span class="badge badge-green">In Stock</span></div>
+        </div>`;
+      $("tonerInventoryList").appendChild(div);
+    });
+    outStock.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main"><div class="data-row-title">${t.tonerName}</div></div>
+        <div class="data-row-right">
+          <div class="data-row-value" style="color:var(--amber)">${t.qty}</div>
+          <div class="data-row-label"><span class="badge badge-amber">Out</span></div>
+        </div>`;
+      $("tonerOutOfStockList").appendChild(div);
+    });
+  }
+
+  function renderMachineSales() {
+    const list = $("machineSalesList");
+    list.innerHTML = "";
+    $("salesEmptyState").style.display = machineSales.length ? "none" : "block";
+    machineSales.forEach(sale => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main">
+          <div class="data-row-title">${sale.model}</div>
+          <div class="data-row-sub">${sale.customerName} · ${sale.date} · ${sale.qty}×</div>
+        </div>
+        <div class="data-row-right">
+          <div class="data-row-value">₹${formatMoney(sale.sellingPrice)}</div>
+          <div class="data-row-label"><button class="btn btn-danger btn-sm" data-machine-sale-id="${sale.id}">Remove</button></div>
+        </div>`;
+      list.appendChild(div);
+    });
+  }
+
+  function renderTonerSales() {
+    const list = $("tonerSalesList");
+    list.innerHTML = "";
+    $("tonerSalesEmptyState").style.display = tonerSales.length ? "none" : "block";
+    tonerSales.forEach(sale => {
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main">
+          <div class="data-row-title">${sale.tonerName}</div>
+          <div class="data-row-sub">${sale.customerName} · ${sale.date} · ${sale.qty}×</div>
+        </div>
+        <div class="data-row-right">
+          <div class="data-row-value">₹${formatMoney(sale.sellingPrice)}</div>
+          <div class="data-row-label"><button class="btn btn-danger btn-sm" data-toner-sale-id="${sale.id}">Remove</button></div>
+        </div>`;
+      list.appendChild(div);
+    });
+  }
+
+  function renderShippingTodos() {
+    $("shippingTodoList").innerHTML = "";
+    $("shippingEmptyState").style.display = shippingTodos.length ? "none" : "block";
+    $("pendingShippingCount").textContent = shippingTodos.length;
+    shippingTodos.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "item-card";
+      div.innerHTML = `
+        <div class="item-card-header">
+          <span class="item-card-title">${item.model}</span>
+          <span class="badge badge-amber">Pending</span>
+        </div>
+        <div class="item-card-meta">
+          <span>👤 ${item.customer}</span>
+          <span>📅 ${item.date}</span>
+        </div>
+        <div class="item-card-actions">
+          <button class="btn btn-green btn-sm" data-shipping-id="${item.id}">✓ Mark Shipped</button>
+          <button class="btn btn-danger btn-sm" data-delete-shipping-id="${item.id}">Delete</button>
+        </div>`;
+      $("shippingTodoList").appendChild(div);
+    });
+  }
+
+  function renderShippingInfo() {
+    const list = $("shippingInfoList");
+    list.innerHTML = "";
+    $("shippingInfoEmptyState").style.display = shippingInfo.length ? "none" : "block";
+    shippingInfo.forEach(item => {
+      const shipped = item.status === "Shipped";
+      const div = document.createElement("div");
+      div.className = "data-row";
+      div.innerHTML = `
+        <div class="data-row-main">
+          <div class="data-row-title">${item.model}</div>
+          <div class="data-row-sub">${item.customer} · ${item.date}</div>
+        </div>
+        <div class="data-row-right">
+          <span class="badge ${shipped?"badge-green":"badge-amber"}">${item.status}</span>
+        </div>`;
+      list.appendChild(div);
+    });
+  }
+
+  function renderLedgers() {
+    $("ledgerList").innerHTML = "";
+    $("ledgerEmptyState").style.display = ledgers.length ? "none" : "block";
+    $("activeLedgerCount").textContent = ledgers.length;
+    ledgers.forEach(ledger => {
+      const remaining = Number(ledger.remainingBalance||0);
+      const pct = Math.round((Number(ledger.amountPaid||0)/Math.max(Number(ledger.itemPrice||1),1))*100);
+      const div = document.createElement("div");
+      div.className = "item-card";
+      div.innerHTML = `
+        <div class="item-card-header">
+          <span class="item-card-title">${ledger.customerName}</span>
+          <span class="badge ${remaining>0?"badge-amber":"badge-green"}">${remaining>0?"Pending":"Paid"}</span>
+        </div>
+        <div class="item-card-meta">
+          <span>📦 ${ledger.itemName}</span>
+          <span>Total: ₹${formatMoney(ledger.itemPrice)} · Paid: ₹${formatMoney(ledger.amountPaid)} (${pct}%)</span>
+          <span>Balance: ₹${formatMoney(remaining)}</span>
+          <span>📅 ${ledger.createdDate}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <div class="item-card-actions">
+          <button class="btn btn-green btn-sm" data-ledger-id="${ledger.id}">✓ Mark Completed</button>
+        </div>`;
+      $("ledgerList").appendChild(div);
+    });
+  }
+
+  function renderRecords() {
+    const list = $("recordsList");
+    list.innerHTML = "";
+    $("recordsEmptyState").style.display = ledgerRecords.length ? "none" : "block";
+    ledgerRecords.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "item-card";
+      div.innerHTML = `
+        <div class="item-card-header">
+          <span class="item-card-title">${r.customerName}</span>
+          <span class="badge badge-green">Completed</span>
+        </div>
+        <div class="item-card-meta">
+          <span>📦 ${r.itemName}</span>
+          <span>Total: ₹${formatMoney(r.itemPrice)} · Paid: ₹${formatMoney(r.amountPaid)}</span>
+          <span>⏱ Duration: ${r.duration}</span>
+          <span>✅ Completed: ${r.completedDate}</span>
+        </div>`;
+      list.appendChild(div);
+    });
+  }
+
+  function renderAll() {
+    renderMachineGroup("Black & White","bwInventoryList","bwOutOfStockList","bwInStockCount","bwOutCount","bwEmptyState","bwOutOfStockEmptyState");
+    renderMachineGroup("Color","colorInventoryList","colorOutOfStockList","colorInStockCount","colorOutCount","colorEmptyState","colorOutOfStockEmptyState");
+    updateMachineCounts();
+    renderToners();
+    renderMachineSales();
+    renderTonerSales();
+    renderShippingTodos();
+    renderShippingInfo();
+    renderLedgers();
+    renderRecords();
+  }
+
+  // ── LOAD ──
+  async function loadAll() {
+    try {
+      const [m, ms, t, ts, stodo, sinfo, l, lr] = await Promise.all([
+        fbGet("machines"), fbGet("machineSales"), fbGet("toners"), fbGet("tonerSales"),
+        fbGet("shippingTodos"), fbGet("shippingInfo"), fbGet("ledgers"), fbGet("ledgerRecords")
+      ]);
+      machines      = ensureIds(m);
+      machineSales  = ensureIds(ms);
+      toners        = ensureIds(t);
+      tonerSales    = ensureIds(ts);
+      shippingTodos = ensureIds(stodo);
+      shippingInfo  = ensureIds(sinfo);
+      ledgers       = ensureIds(l);
+      ledgerRecords = ensureIds(lr);
+      renderAll();
+      setSyncStatus("live");
+    } catch(e) {
+      console.error("Firebase error:", e);
+      setSyncStatus("offline");
+      showToast("Firebase connection failed. Check your API key.", "error");
+    }
+    const overlay = $("loadingOverlay");
+    overlay.classList.add("hidden");
+    setTimeout(() => overlay.remove(), 400);
+  }
+
+  // ── SAVE MACHINES ──
+  async function saveMachines() {
+    for (const m of machines) {
+      const id = m._id || normalize(m.model + "_" + m.machineType).replace(/[^a-z0-9]/g,"_");
+      m._id = id;
+      const { _id, ...data } = m;
+      await fbSet("machines", id, data);
+    }
+  }
+
+  async function handleMachinePurchase(model, machineType, qty) {
+    const existing = machines.find(m => normalize(m.model)===normalize(model) && m.machineType===machineType);
+    if (existing) { existing.qty += qty; }
+    else {
+      const newItem = { model, machineType, qty };
+      newItem._id = normalize(model + "_" + machineType).replace(/[^a-z0-9]/g,"_");
+      machines.push(newItem);
+    }
+    machines = sortByName(machines, "model");
+    await saveMachines();
+    renderAll();
+  }
+
+  // ── FORMS ──
+  $("purchaseForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const model = $("purchaseModel").value.trim();
+    const type  = $("purchaseMachineType").value;
+    const qty   = Number($("purchaseQty").value);
+    if (!model || !type || qty < 0) { showMsg("messageBox","Please fill all fields correctly.","error"); return; }
+    await handleMachinePurchase(model, type, qty);
+    $("purchaseForm").reset();
+    showToast(`Added ${qty}× ${model} to inventory`);
+  });
+
+  $("sellForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const model    = $("sellModel").value.trim();
+    const type     = $("sellMachineType").value;
+    const customer = $("customerName").value.trim();
+    const price    = Number($("sellingPrice").value);
+    const qty      = Number($("sellQty").value);
+    if (!model||!type||!customer||price<0||qty<=0) { showMsg("salesMessageBox","Please fill all fields correctly.","error"); return; }
+    const item = machines.find(m=>normalize(m.model)===normalize(model)&&m.machineType===type);
+    if (!item) { showMsg("salesMessageBox",`"${model}" not found in inventory.`,"error"); return; }
+    if (item.qty < qty) { showMsg("salesMessageBox",`Only ${item.qty} units available.`,"error"); return; }
+    item.qty -= qty;
+    await saveMachines();
+    const sale = { id: getRecordId(), date: getTodayDate(), customerName: customer, model, machineType: type, sellingPrice: price, qty };
+    machineSales.unshift(sale);
+    await fbSet("machineSales", sale.id, sale);
+    $("sellForm").reset();
+    renderAll();
+    showToast(`Machine sale recorded — ${qty}× ${model}`);
+  });
+
+  $("tonerPurchaseForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("purchaseTonerNameOnly").value.trim();
+    const qty  = Number($("purchaseTonerQtyOnly").value);
+    if (!name||qty<0) { showMsg("tonerMessageBox","Please fill all fields correctly.","error"); return; }
+    const item = toners.find(t=>normalize(t.tonerName)===normalize(name));
+    if (item) {
+      item.qty += qty;
+      const id = item._id || normalize(item.tonerName).replace(/[^a-z0-9]/g,"_");
+      item._id = id;
+      const { _id, ...data } = item;
+      await fbSet("toners", id, data);
+    } else {
+      const id = normalize(name).replace(/[^a-z0-9]/g,"_") + "_" + Date.now();
+      const newItem = { tonerName: name, qty, _id: id };
+      toners.push(newItem);
+      const { _id, ...data } = newItem;
+      await fbSet("toners", id, data);
+    }
+    toners = sortByName(toners, "tonerName");
+    $("tonerPurchaseForm").reset();
+    renderAll();
+    showToast(`Added ${qty}× ${name} toner`);
+  });
+
+  $("tonerSellForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name     = $("sellTonerName").value.trim();
+    const customer = $("tonerCustomerName").value.trim();
+    const price    = Number($("tonerSellingPrice").value);
+    const qty      = Number($("sellTonerQty").value);
+    if (!name||!customer||price<0||qty<=0) { showMsg("salesMessageBox","Please fill all fields correctly.","error"); return; }
+    const item = toners.find(t=>normalize(t.tonerName)===normalize(name));
+    if (!item) { showMsg("salesMessageBox",`"${name}" not found in toner inventory.`,"error"); return; }
+    if (item.qty < qty) { showMsg("salesMessageBox",`Only ${item.qty} units available.`,"error"); return; }
+    item.qty -= qty;
+    const id = item._id || normalize(item.tonerName).replace(/[^a-z0-9]/g,"_");
+    item._id = id;
+    const { _id, ...data } = item;
+    await fbSet("toners", id, data);
+    const sale = { id: getRecordId(), date: getTodayDate(), customerName: customer, tonerName: name, sellingPrice: price, qty };
+    tonerSales.unshift(sale);
+    await fbSet("tonerSales", sale.id, sale);
+    $("tonerSellForm").reset();
+    renderAll();
+    showToast(`Toner sale recorded — ${qty}× ${name}`);
+  });
+
+  $("shippingForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const model    = $("shippingModel").value.trim();
+    const customer = $("shippingCustomer").value.trim();
+    if (!model||!customer) { showMsg("shippingMessageBox","Please fill all fields.","error"); return; }
+    const item = { id: getRecordId(), model, customer, date: getTodayDate(), status: "Pending" };
+    shippingTodos.unshift(item);
+    shippingInfo.unshift(item);
+    await fbSet("shippingTodos", item.id, item);
+    await fbSet("shippingInfo", item.id, item);
+    $("shippingForm").reset();
+    renderAll();
+    showToast(`Shipping task added — ${model}`);
+  });
+
+  $("ledgerForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const customer = $("ledgerCustomerName").value.trim();
+    const itemName = $("ledgerItemName").value.trim();
+    const price    = Number($("ledgerItemPrice").value);
+    const paid     = Number($("ledgerAmountPaid").value);
+    if (!customer||!itemName||price<0||paid<0) { showMsg("ledgerMessageBox","Please fill all fields correctly.","error"); return; }
+    if (paid > price) { showMsg("ledgerMessageBox","Deposit cannot exceed item price.","error"); return; }
+    const entry = { id: getRecordId(), customerName: customer, itemName, itemPrice: price, amountPaid: paid, remainingBalance: price-paid, createdAt: Date.now(), createdDate: getTodayDate() };
+    ledgers.unshift(entry);
+    await fbSet("ledgers", entry.id, entry);
+    $("ledgerForm").reset();
+    renderAll();
+    showToast(`Ledger entry created for ${customer}`);
+  });
+
+  // ── DELETE / ACTION HANDLERS ──
+  $("machineSalesList").addEventListener("click", async e => {
+    const btn = e.target.closest("[data-machine-sale-id]");
+    if (!btn) return;
+    const id = btn.dataset.machineSaleId;
+    await fbDel("machineSales", id);
+    machineSales = machineSales.filter(s => String(s.id) !== id);
+    renderMachineSales();
+    showToast("Machine sale removed", "error");
+  });
+
+  $("tonerSalesList").addEventListener("click", async e => {
+    const btn = e.target.closest("[data-toner-sale-id]");
+    if (!btn) return;
+    const id = btn.dataset.tonerSaleId;
+    await fbDel("tonerSales", id);
+    tonerSales = tonerSales.filter(s => String(s.id) !== id);
+    renderTonerSales();
+    showToast("Toner sale removed", "error");
+  });
+
+  $("shippingTodoList").addEventListener("click", async e => {
+    const doneBtn = e.target.closest("[data-shipping-id]");
+    const delBtn  = e.target.closest("[data-delete-shipping-id]");
+    if (doneBtn) {
+      const id = doneBtn.dataset.shippingId;
+      shippingTodos = shippingTodos.filter(t => String(t.id) !== id);
+      shippingInfo  = shippingInfo.map(t => String(t.id) === id ? { ...t, status: "Shipped" } : t);
+      await fbDel("shippingTodos", id);
+      const updated = shippingInfo.find(t => String(t.id) === id);
+      if (updated) await fbSet("shippingInfo", id, updated);
+      renderAll();
+      showToast("Marked as shipped ✓");
+    }
+    if (delBtn) {
+      const id = delBtn.dataset.deleteShippingId;
+      shippingTodos = shippingTodos.filter(t => String(t.id) !== id);
+      await fbDel("shippingTodos", id);
+      renderAll();
+      showToast("Shipping task deleted", "error");
+    }
+  });
+
+  $("ledgerList").addEventListener("click", async e => {
+    const btn = e.target.closest("[data-ledger-id]");
+    if (!btn) return;
+    const id     = btn.dataset.ledgerId;
+    const ledger = ledgers.find(l => String(l.id) === id);
+    if (!ledger) return;
+    const record = { ...ledger, completedDate: getTodayDate(), duration: formatDuration(ledger.createdAt, Date.now()) };
+    ledgerRecords.unshift(record);
+    ledgers = ledgers.filter(l => String(l.id) !== id);
+    await fbDel("ledgers", id);
+    await fbSet("ledgerRecords", record.id, record);
+    renderAll();
+    showToast(`Ledger completed for ${ledger.customerName}`);
+  });
+
+  // ── INIT ──
+  loadAll();
+</script>
+</body>
+</html>
